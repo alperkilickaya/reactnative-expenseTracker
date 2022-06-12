@@ -65,7 +65,6 @@ const ExpenseForm = ({ onCancel, onSubmit, isEditing, defaultValues }) => {
     !inputs.amount.isValid ||
     !inputs.date.isValid ||
     !inputs.description.isValid;
-  console.log(inputs);
   return (
     <View style={styles.form}>
       <Text style={styles.title}>Your Expense</Text>

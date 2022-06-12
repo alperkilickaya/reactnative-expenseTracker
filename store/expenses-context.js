@@ -1,39 +1,9 @@
 import { createContext, useReducer } from "react";
 
-const DUMMY_EXPENSES = [
-  {
-    id: "e1",
-    description: "A pair of shoesss",
-    amount: 69.99,
-    date: new Date("2022-06-08"),
-  },
-  { id: "e2", description: "A hat", amount: 25, date: new Date("2022-04-22") },
-  {
-    id: "e3",
-    description: "Sunglasses",
-    amount: 10,
-    date: new Date("2022-06-05"),
-  },
-  { id: "e4", description: "A book", amount: 35, date: new Date("2022-03-22") },
-  {
-    id: "e5",
-    description: "A pair of shoes",
-    amount: 69.99,
-    date: new Date("2022-01-22"),
-  },
-  { id: "e6", description: "A hat", amount: 25, date: new Date("2022-04-22") },
-  {
-    id: "e7",
-    description: "Sunglasses",
-    amount: 10,
-    date: new Date("2022-05-22"),
-  },
-  { id: "e8", description: "A book", amount: 35, date: new Date("2022-03-22") },
-];
-
 export const ExpensesContext = createContext({
   expenses: [],
   addExpense: ({ description, amount, date }) => {},
+  setExpenses: (expensesData) => {},
   deleteExpense: (id) => {},
   updateExpense: (id, { description, amount, date }) => {},
 });
@@ -41,8 +11,14 @@ export const ExpensesContext = createContext({
 const expensesReduder = (state, action) => {
   switch (action.type) {
     case "ADD":
-      const id = new Date() + Math.random().toString();
-      return [{ ...action.payload, id }, ...state];
+      return [{ ...action.payload }, ...state];
+
+    case "SET":
+      //firebase add lastest data to the bottom of the list
+      //to list last expense at the top of the list in the app
+      const invertedExpenses = action.payload.reverse();
+      return invertedExpenses;
+
     case "UPDATE":
       const updatableExpenseIndex = state.findIndex(
         (expense) => expense.id === action.payload.id
@@ -62,11 +38,16 @@ const expensesReduder = (state, action) => {
 };
 
 const ExpensesContextProvider = ({ children }) => {
-  const [expensesState, dispatch] = useReducer(expensesReduder, DUMMY_EXPENSES);
+  const [expensesState, dispatch] = useReducer(expensesReduder, []);
 
   const addExpense = (expenseData) => {
     dispatch({ type: "ADD", payload: expenseData });
   };
+
+  const setExpenses = (expensesData) => {
+    dispatch({ type: "SET", payload: expensesData });
+  };
+
   const deleteExpense = (id) => {
     dispatch({ type: "DELETE", payload: id });
   };
@@ -77,6 +58,7 @@ const ExpensesContextProvider = ({ children }) => {
   const value = {
     expenses: expensesState,
     addExpense,
+    setExpenses,
     deleteExpense,
     updateExpense,
   };

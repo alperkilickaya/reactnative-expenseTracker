@@ -5,6 +5,7 @@ import { GlobalStyles } from "../constants/styles";
 
 import { ExpensesContext } from "../store/expenses-context";
 import ExpenseForm from "../components/ManageExpense/ExpenseForm";
+import { storeExpense, updateExpense, deleteExpense } from "../util/http";
 
 const ManageExpense = ({ route, navigation }) => {
   const expensesCtx = useContext(ExpensesContext);
@@ -21,18 +22,28 @@ const ManageExpense = ({ route, navigation }) => {
     });
   }, [navigation, isEditing]);
 
-  function deleteExpenseHandler() {
+  async function deleteExpenseHandler() {
+    //delete from firebase
+    await deleteExpense(editedExpenseId);
+    //delete from context
     expensesCtx.deleteExpense(editedExpenseId);
     navigation.goBack();
   }
   function cancelHandler() {
     navigation.goBack();
   }
-  function confirmHandler(expenseData) {
+  async function confirmHandler(expenseData) {
     if (isEditing) {
+      //update in context
       expensesCtx.updateExpense(editedExpenseId, expenseData);
+      //update in firebase
+      await updateExpense(editedExpenseId, expenseData);
     } else {
-      expensesCtx.addExpense(expenseData);
+      //first post it to firebase
+      const id = await storeExpense(expenseData);
+      //than add new expense to local context
+      //add firebase id to expenseData so context expenseData now stores firebase id
+      expensesCtx.addExpense({ ...expenseData, id });
     }
     navigation.goBack();
   }
