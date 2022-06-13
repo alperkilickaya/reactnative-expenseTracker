@@ -7,9 +7,11 @@ import { ExpensesContext } from "../store/expenses-context";
 import ExpenseForm from "../components/ManageExpense/ExpenseForm";
 import { storeExpense, updateExpense, deleteExpense } from "../util/http";
 import LoadingOverlay from "../UI/LoadingOverlay";
+import ErrorOverlay from "../UI/ErrorOverlay";
 
 const ManageExpense = ({ route, navigation }) => {
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [error, setError] = useState(null);
   const expensesCtx = useContext(ExpensesContext);
   const editedExpenseId = route.params?.expenseID;
   const isEditing = !!editedExpenseId;
@@ -26,33 +28,49 @@ const ManageExpense = ({ route, navigation }) => {
 
   async function deleteExpenseHandler() {
     setIsSubmitting(true);
-    //delete from firebase
-    await deleteExpense(editedExpenseId);
+
+    try {
+      //delete from firebase
+      await deleteExpense(editedExpenseId);
+      //delete from context
+      expensesCtx.deleteExpense(editedExpenseId);
+      navigation.goBack();
+    } catch (error) {
+      setError("Cannot delete expense. Try again later!");
+    }
+
     setIsSubmitting(false);
-    //delete from context
-    expensesCtx.deleteExpense(editedExpenseId);
-    navigation.goBack();
   }
   function cancelHandler() {
     navigation.goBack();
   }
   async function confirmHandler(expenseData) {
     setIsSubmitting(true);
-    if (isEditing) {
-      //update in context
-      expensesCtx.updateExpense(editedExpenseId, expenseData);
-      //update in firebase
-      await updateExpense(editedExpenseId, expenseData);
-    } else {
-      //first post it to firebase
-      const id = await storeExpense(expenseData);
-      //than add new expense to local context
-      //add firebase id to expenseData so context expenseData now stores firebase id
-      expensesCtx.addExpense({ ...expenseData, id });
+    try {
+      if (isEditing) {
+        //update in context
+        expensesCtx.updateExpense(editedExpenseId, expenseData);
+        //update in firebase
+        await updateExpense(editedExpenseId, expenseData);
+        setIsSubmitting(false);
+      } else {
+        //first post it to firebase
+        const id = await storeExpense(expenseData);
+        //than add new expense to local context
+        //add firebase id to expenseData so context expenseData now stores firebase id
+        expensesCtx.addExpense({ ...expenseData, id });
+        setIsSubmitting(false);
+      }
+      navigation.goBack();
+    } catch (error) {
+      setError("Cannot save expense. Try again later!");
+      setIsSubmitting(false);
     }
-    navigation.goBack();
   }
 
+  if (error && !isSubmitting) {
+    return <ErrorOverlay message={error} />;
+  }
   if (isSubmitting) {
     return <LoadingOverlay />;
   }
